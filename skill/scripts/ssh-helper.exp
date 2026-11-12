@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+# SSH 密码交互助手（用于路由器 root 登录）
+# 用法：./ssh-helper.exp <远程脚本路径> <输出文件> [路由器IP] [密码]
+
+set timeout 300
+set script [lindex $argv 0]
+set outfile [lindex $argv 1]
+set router [lindex $argv 2]
+set password [lindex $argv 3]
+if {$router eq ""} { set router "192.168.2.1" }
+if {$password eq ""} { set password "REDACTED" }
+
+spawn bash -c "scp -o StrictHostKeyChecking=no $script root@$router:/tmp/_run.sh && ssh -o StrictHostKeyChecking=no root@$router 'sh /tmp/_run.sh' > $outfile 2>&1"
+expect {
+  "password:" { send "$password\r"; exp_continue }
+  eof
+}

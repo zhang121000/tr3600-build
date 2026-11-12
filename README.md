@@ -60,3 +60,7 @@ Fork 本仓库 → Actions → 手动触发 `Build OpenWrt 25.12 for Cudy TR3600
 ## 免责声明
 
 本项目与 OpenWrt 官方、Cudy 官方无关。固件为实验性质，刷机风险自负。请在刷机前备份原厂分区（特别是 Factory 无线校准分区）。
+
+## 附：AI Agent Skill
+
+本仓库还包含一个 `skill/` 目录，把完整的刷机/编译/配置/排障流程封装成了 AI Agent 可调用的 Skill（含 SKILL.md、自动化脚本、踩坑记录）。支持 Kimi Code 等兼容 Agent Skills 规范的工具。
