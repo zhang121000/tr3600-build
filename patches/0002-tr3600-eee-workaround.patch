@@ -1,0 +1,20 @@
+--- a/target/linux/mediatek/dts/mt7987b-cudy-tr3600-v1.dts
++++ b/target/linux/mediatek/dts/mt7987b-cudy-tr3600-v1.dts
+@@ -101,6 +101,8 @@
+ 	phy1: phy@1 {
+ 		compatible = "ethernet-phy-ieee802.3-c45";
+ 		reg = <1>;
++		eee-broken-100tx;
++		eee-broken-1000t;
+ 		interrupt-parent = <&pio>;
+ 		interrupts = <41 IRQ_TYPE_LEVEL_LOW>;
+ 		reset-gpios = <&pio 42 GPIO_ACTIVE_LOW>;
+@@ -114,6 +116,8 @@
+ 	phy15: phy@f {
+ 		compatible = "ethernet-phy-ieee802.3-c45";
+ 		reg = <15>;
++		eee-broken-100tx;
++		eee-broken-1000t;
+ 		pinctrl-names = "i2p5gbe-led";
+ 		pinctrl-0 = <&i2p5gbe_led0_pins>;
+ 	};
