@@ -29,10 +29,20 @@ jobs:
       - name: Clone OpenWrt (openwrt-25.12 branch)
         run: git clone --depth 1 -b openwrt-25.12 https://github.com/openwrt/openwrt.git openwrt
 
-      - name: Apply TR3600 device patch
+      - name: Apply TR3600 device patch and EEE fix
         run: |
           cd openwrt
           git apply ../patches/*.patch
+
+      - name: Pre-bake config and geodata
+        run: |
+          cp -r files/ openwrt/files/ 2>/dev/null || cp -r files openwrt/
+          mkdir -p openwrt/files/usr/share/v2ray
+          curl -sL --retry 3 -o openwrt/files/usr/share/v2ray/geosite.dat \
+            https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+          curl -sL --retry 3 -o openwrt/files/usr/share/v2ray/geoip.dat \
+            https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+          ls -la openwrt/files/usr/share/v2ray/
 
       - name: Add feeds and update
         run: |
