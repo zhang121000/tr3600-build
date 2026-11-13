@@ -1,12 +1,13 @@
 #!/bin/bash
 # Cudy TR3600 刷机脚本：通过 LuCI 后台上传固件并刷入
 # 用法：./flash.sh <固件路径> [路由器IP] [密码]
-# 默认：192.168.2.1，root / REDACTED（按需修改）
+# 密码建议通过第 3 个参数或 ROUTER_PASS 环境变量传入，不要写死在脚本里
 
 set -e
 FW="${1:?用法: $0 <固件路径> [路由器IP] [密码]}"
 ROUTER="${2:-192.168.2.1}"
-PASS="${3:-REDACTED}"
+PASS="${3:-${ROUTER_PASS}}"
+[ -z "$PASS" ] && { echo "请通过第 3 个参数或 ROUTER_PASS 环境变量提供路由器密码"; exit 1; }
 COOKIE=/tmp/luci_flash_cookie.txt
 rm -f "$COOKIE"
 

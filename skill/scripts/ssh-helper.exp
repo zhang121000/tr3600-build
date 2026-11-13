@@ -8,7 +8,13 @@ set outfile [lindex $argv 1]
 set router [lindex $argv 2]
 set password [lindex $argv 3]
 if {$router eq ""} { set router "192.168.2.1" }
-if {$password eq ""} { set password "REDACTED" }
+if {$password eq ""} {
+  if {[info exists env(ROUTER_PASS)]} { set password $env(ROUTER_PASS) }
+}
+if {$password eq ""} {
+  puts "请通过第 4 个参数或 ROUTER_PASS 环境变量提供路由器密码"
+  exit 1
+}
 
 spawn bash -c "scp -o StrictHostKeyChecking=no $script root@$router:/tmp/_run.sh && ssh -o StrictHostKeyChecking=no root@$router 'sh /tmp/_run.sh' > $outfile 2>&1"
 expect {
