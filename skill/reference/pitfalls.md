@@ -47,4 +47,58 @@
 
 ## 7. 节点部分死亡是常态
 
-机场节点会挂（尤其普通线路）。应对：建 Xray `_balancing` 容错组，把多个节点编入，设置 fallback_node。可跨机场混编实现服务商级容错。
+机场节点会挂（尤其普通线路）。应对：建容错组，把多个节点编入；Xray 节点用 `_balancing`，AnyTLS 节点用 sing-box `_urltest`。可跨机场混编实现服务商级容错。
+
+## 8. Xray 分流 + AnyTLS：一个节点一个 sing-box 进程
+
+**症状**：PassWall 的均衡组里放几十个 AnyTLS 节点后，路由器突然卡死，SSH/LuCI 无响应，内存接近耗尽，负载 15+。
+
+**根因**：Xray 不支持 AnyTLS，PassWall 会为均衡组里的**每个 AnyTLS 节点**单独启动一个 sing-box socks 进程。50 个节点 ≈ 30~40 个进程，512MB 内存扛不住。
+
+**修复**：AnyTLS 节点改用 **sing-box 主分流 + `_urltest`**，所有节点在一个 sing-box 进程内。实测进程数从 13 降到 2，内存从 235MB 降到 145MB。
+
+## 9. 同内核铁律：池成员、池、分流总节点必须同内核
+
+**症状**：把 Xray 负载均衡组塞进 sing-box 的 `_urltest`，或反过来，组里明明有节点却不生效，甚至回落直连。
+
+**根因**：PassWall 的组/分流总节点有内核绑定；跨内核调用构建不出出口。
+
+**对策**：
+
+- AnyTLS / sing-box 节点 → sing-box 主分流 + `_urltest`；
+- VLESS 等 Xray 节点 → Xray 主分流 + `_balancing`；
+- 混合协议时，要么把节点类型统一成 sing-box，要么按内核拆成独立链路。
+- 注意：在 Xray 主分流下创建 `_urltest`，PassWall 仍会把子节点拆成单独 socks 进程；必须把 `myshunt.type` 改成 `sing-box` 才真正生效。
+
+## 10. URLTest 的 interval ≠ 切换频率
+
+**症状**：担心 `interval=3m` 会导致每 3 分钟跳一次 IP。
+
+**事实**：`interval` 是探测频率；只有当另一个节点比当前节点快出 `tolerance`（默认 50ms）时才会切换。AnyTLS 冷启动延迟偏高，50ms 容差容易抖，建议 150~200ms、探测 10 分钟。URLTest 还**不会在主节点恢复后切回**，也不做多出口分担。
+
+## 11. IPv6-only 节点在纯 IPv4 网络不可用
+
+**症状**：`SBV6`、`CMIN2 V6` 等节点全部超时，但节点本身没坏。
+
+**根因**：这些域名只解析出 AAAA（IPv6），而路由器 WAN 只有 IPv4/链路本地 IPv6，`ping6` 直接 `Network unreachable`。
+
+**排查**：`nslookup 节点域名` 看是否有 A 记录；`ip -6 route` 看是否有全局 IPv6 默认路由。没有 IPv6 就不要再把这类节点放进组里。
+
+## 12. 路由器默认时区可能是 GMT，cron 会错 8 小时
+
+**症状**：cron 写 `0 20 * * *`，实际凌晨 4 点才执行。
+
+**根因**：系统 `timezone='GMT0'`，不是 `Asia/Shanghai`。
+
+**修复**：
+
+```sh
+uci set system.@system[0].timezone='CST-8'
+uci set system.@system[0].zonename='Asia/Shanghai'
+uci commit system
+/etc/init.d/system reload
+```
+
+## 13. sing-box 分流依赖 Geoview
+
+PassWall 25.3.9 之后，sing-box 分流需要 Geoview 把 geosite/geoip 转成 rule-set。缺少 Geoview 时，节点能连但分流规则不生效。排查：`which geoview`、`sing-box version`、`logread -e geoview`。

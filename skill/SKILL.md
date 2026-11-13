@@ -53,8 +53,13 @@ description: 为 Cudy TR3600 v1 刷入/编译/配置 OpenWrt 25.12 的完整流�
 1. 订阅管理 → 添加订阅链接 → 更新订阅导入节点
 2. **新版 PassWall 主节点字段是 `node`**（不是老教程的 `tcp_node`），只设后者会导致主代理不启动
 3. 分流：编辑"分流总节点"（myshunt），AIGC 规则（geosite:category-ai-!cn）指向原生 IP 节点，default_node 指向日常节点
-4. 容错：创建 Xray `_balancing` 协议节点（负载均衡组），把多个节点加入 balancing_node，设置 fallback_node 兜底；可把不同机场的节点混编入组实现跨机场容错
-5. 启动前确认 geosite.dat/geoip.dat 存在（本固件已预置在 /usr/share/v2ray/）
+4. 容错：
+   - **AnyTLS 节点（sing-box）**：把主分流 `myshunt.type` 改为 `sing-box`，建 `_urltest` 组，一个 sing-box 进程管所有节点。不要用 Xray `_balancing` 放 AnyTLS——PassWall 会为每个节点单独起一个 sing-box 进程，节点一多就 OOM。
+   - **纯 Xray 节点（VLESS 等）**：才用 `_balancing` + `fallback_node`。
+   - **同内核铁律**：池成员、池、分流总节点必须同内核，混用会构建不出出口甚至回落直连。
+   - **IP 敏感流量**（AI、流媒体、银行）：用单节点 + 后备，不要放进 URLTest，避免 IP 跳变。
+5. 启动前确认 geosite.dat/geoip.dat 存在（本固件已预置在 /usr/share/v2ray/）；sing-box 分流还需要 Geoview。
+6. 路由器时区设为 `Asia/Shanghai`；自动切换用 cron + uci，切换后测 Google，失败自动回退（见 `scripts/pw-mode.sh`）。
 
 ## 故障排查决策树
 
@@ -71,4 +76,6 @@ description: 为 Cudy TR3600 v1 刷入/编译/配置 OpenWrt 25.12 的完整流�
 - `scripts/build.sh` — Docker 本地编译脚本
 - `scripts/flash.sh` — 刷机自动化（LuCI 上传 + sysupgrade）
 - `scripts/ssh-helper.exp` — SSH 密码交互助手
+- `scripts/pw-mode.sh` — sing-box 运行时模式切换（normal / boost / broad / status）
+- `reference/runtime-singbox.md` — sing-box 单架构 + URLTest 运行时方案
 - `reference/pitfalls.md` — 完整踩坑记录
