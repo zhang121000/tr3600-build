@@ -85,6 +85,17 @@ PassWall 的 sing-box 不暴露“当前节点”，延迟也只能测 TCP 握�
 - **Mac 能上国内不能上国外** → 检查是否同时开了客户端代理（FlClash/Clash）与路由器 PassWall 双重代理冲突
 - **完全失联** → Reset 长按 10 秒恢复出厂（预置配置在固件里，恢复后仍是完整状态）
 
+## 操作纪律（血泪版）
+
+改 OpenClash/PassWall 的生产配置前，必须先读 `reference/incident-postmortem.md`。
+
+硬规则：
+1. 生产配置只读，改动先在 `/tmp` 生成 + 临时实例验证；
+2. `mihomo -t` 必须通过，DNS 段必须含 `listen`；
+3. DNS 段不引用代理组（`#组名`），不随便开 `respect-rules`；
+4. 改完立即验证 DNS、国内、国外三项，失败一条命令回滚（备份放 `/root`）；
+5. 一次只改一类，验证通过再动下一类。
+
 ## 参考文件
 
 - `scripts/build.sh` — Docker 本地编译脚本
